@@ -43,4 +43,4 @@ stdin: false
 uart: false
 usb: false
 gpio: false
-documentation: https://github.com/trevnologies/viofo-sync-addon/blob/main/viofo-sync/README.md
+documentation: https://github.com/trevnologies/viofo-sync-addon/blob/main/README.md
