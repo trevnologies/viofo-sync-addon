@@ -1,0 +1,107 @@
+# ============================================================
+# VIOFO Sync — Home Assistant Automations Reference
+#
+# Replace the following placeholders before importing:
+#   person.your_name     → your actual person entity
+#   zone.dashcam_sync    → the zone you want to trigger the sync
+#                          (e.g. your driveway — create it in
+#                          Settings → Areas & Zones → Zones)
+#   notify.mobile_app_your_phone → your actual notification service
+# ============================================================
+
+# ── 1. Trigger sync on arrival ───────────────────────────────
+#
+# Triggers when you leave home and then enter the dashcam sync
+# zone (e.g. your driveway), so quick trips that never leave
+# the home zone don't trigger a sync. The 5-minute delay gives
+# the dashcam time to connect to Wi-Fi before the sync starts.
+# Mode is restart so if you leave and return multiple times,
+# only the most recent trip triggers a sync.
+#
+- alias: "Dashcam: Sync on arrival"
+  description: "When the person leaves home and enters the dashcam sync zone, triggers a sync via MQTT after a 5-minute delay"
+  trigger:
+    - platform: zone
+      entity_id: person.your_name
+      zone: zone.home
+      event: leave
+  action:
+    - wait_for_trigger:
+        - platform: zone
+          entity_id: person.your_name
+          zone: zone.dashcam_sync
+          event: enter
+      timeout:
+        hours: 12
+      continue_on_timeout: false
+    - delay:
+        minutes: 5
+    - action: mqtt.publish
+      data:
+        topic: viofo/sync/trigger
+        payload: run
+  mode: restart
+
+# ── 2. Notify on sync complete ──────────────────────────────
+- alias: "Dashcam: Notify on sync result"
+  description: "Sends a mobile notification when a sync finishes"
+  trigger:
+    - platform: event
+      event_type: viofo_sync_complete
+  action:
+    - choose:
+        # New clips downloaded successfully
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ trigger.event.data.status == 'ok'
+                   and trigger.event.data.downloaded | int > 0 }}
+          sequence:
+            - service: notify.mobile_app_your_phone
+              data:
+                title: "✅ Dashcam Sync"
+                message: >
+                  Downloaded {{ trigger.event.data.downloaded }} protected
+                  clip(s) to NAS.
+                  {% if trigger.event.data.deleted | int > 0 %}
+                  Cleared {{ trigger.event.data.deleted }} from camera.
+                  {% endif %}
+        # Camera was offline
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.status == 'offline' }}"
+          sequence:
+            - service: notify.mobile_app_your_phone
+              data:
+                title: "🔴 Dashcam Offline"
+                message: >
+                  Camera wasn't reachable during
+                  {{ trigger.event.data.trigger }} sync.
+        # Errors occurred
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ trigger.event.data.status in ['error', 'partial'] }}
+          sequence:
+            - service: notify.mobile_app_your_phone
+              data:
+                title: "⚠️ Dashcam Sync Issue"
+                message: >
+                  {{ trigger.event.data.downloaded }} clip(s) downloaded,
+                  {{ trigger.event.data.errors }} error(s).
+                  Check the VIOFO Sync add-on logs.
+  mode: queued
+  max: 5
+
+# ── 3. Notify on config change ──────────────────────────────
+- alias: "Dashcam: Notify on config change"
+  description: "Notifies when camera settings have changed and a backup was saved"
+  trigger:
+    - platform: event
+      event_type: viofo_config_changed
+  action:
+    - service: notify.mobile_app_your_phone
+      data:
+        title: "📷 Dashcam Config Changed"
+        message: "Settings backup saved: {{ trigger.event.data.file }}"
+  mode: single
