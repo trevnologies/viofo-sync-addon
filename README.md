@@ -17,6 +17,8 @@ A Home Assistant add-on that automatically syncs your VIOFO A329S dashcam — do
 
 ## Installation
 
+[![Add to Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/trevnologies/viofo-sync-addon)
+
 ### 1. Add the Repository to Home Assistant
 
 **Settings → Apps → Add-on Store → ⋮ → Repositories**, paste:
