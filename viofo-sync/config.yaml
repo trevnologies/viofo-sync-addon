@@ -1,7 +1,10 @@
 name: "VIOFO Sync"
 description: "Downloads protected (RO) videos from your VIOFO dashcam to your NAS, then deletes them from the camera."
 version: "1.8.7"
+url: "https://github.com/trevnologies/viofo-sync-addon"
 slug: "viofo_sync"
+startup: application
+boot: auto
 init: false
 arch:
   - aarch64
@@ -43,5 +46,3 @@ stdin: false
 uart: false
 usb: false
 gpio: false
-documentation: https://github.com/trevnologies/viofo-sync-addon/blob/main/README.md
-url: https://github.com/trevnologies/viofo-sync-addon
