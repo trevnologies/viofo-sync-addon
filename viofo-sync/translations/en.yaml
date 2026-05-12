@@ -1,0 +1,31 @@
+configuration:
+  cam_ip:
+    name: Camera IP Address
+    description: "The IP address of your VIOFO dashcam on your home network. Set a DHCP reservation so this never changes."
+  dest_subdir:
+    name: NAS Share Name
+    description: "The name of your HA network storage share (case-sensitive). Example: 'Dashcam' writes to Backups/Dashcam on your NAS."
+  schedule_interval_minutes:
+    name: Sync Interval (minutes)
+    description: "How often to automatically check for new protected videos. Set to 0 to disable scheduled syncs and rely on arrival/manual triggers only."
+  delete_after_download:
+    name: Delete from Camera After Download
+    description: "Once a file is verified saved to the NAS, delete it from the dashcam's SD card."
+  dry_run:
+    name: Dry Run Mode
+    description: "If enabled, the add-on will log what it would do but not actually download or delete anything. Use this to verify setup before going live."
+  sync_on_startup:
+    name: Sync on Startup
+    description: "Run a sync automatically when the add-on starts. Disable this if you only want syncs triggered by arrival or manual MQTT trigger."
+  ui_notifications:
+    name: UI Notifications
+    description: "Show sync result notifications (success, partial, error, offline) in the Home Assistant UI notification center. Disable if you only want push notifications on your phone."
+  ui_notify_config_change:
+    name: UI Notify on Camera Config Change
+    description: "Show a notification in the Home Assistant UI notification center when a dashcam config backup is saved and no new clips were found. Disable if you find this notification noisy."
+  mqtt_user:
+    name: MQTT Username
+    description: "Username for your Mosquitto broker. Leave blank if your broker allows anonymous connections."
+  mqtt_pass:
+    name: MQTT Password
+    description: "Password for your Mosquitto broker. Leave blank if your broker allows anonymous connections."
