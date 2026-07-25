@@ -1,7 +1,7 @@
 # Changelog
 
 ### 1.8.9
-- Removed `,complain` from the AppArmor profile — now enforcing rather than just logging
+- Removed `,complain` from the AppArmor profile — now enforcing rather than just logging 
 
 ### 1.8.8
 - Migrated `map` config to the current `type`/`read_only` format — replaces the legacy `share:rw` shorthand with `type: share` / `read_only: false`
