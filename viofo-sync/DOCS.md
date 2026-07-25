@@ -27,8 +27,8 @@ Downloads protected (locked) clips from your VIOFO dashcam to your NAS over Wi-F
 |--------|-----|
 | Startup | Automatic on add-on start if `sync_on_startup` is enabled |
 | Scheduled | Set `schedule_interval_minutes` > `0` |
-| Arrival | HA automation publishes to `viofo/sync/trigger` via MQTT after you leave home and enter your dashcam sync zone |
-| Manual | Publish any message to MQTT topic `viofo/sync/trigger` |
+| Arrival | HA automation calls `script.dashcam_trigger_sync` with `source: arrival` after you leave home and enter your dashcam sync zone — labeled "Arrival" in notifications and logs |
+| Manual | Call `script.dashcam_trigger_sync` (source defaults to `manual`), or publish anything other than `arrival` directly to `viofo/sync/trigger` — labeled "Manual" |
 
 ---
 
@@ -48,7 +48,7 @@ The add-on fires these events that your HA automations can listen to:
 
 ## MQTT
 
-The add-on subscribes to `viofo/sync/trigger` on the local Mosquitto broker (`core-mosquitto`). Any message payload triggers a sync. The listener is automatically restarted if it dies.
+The add-on subscribes to `viofo/sync/trigger` on the local Mosquitto broker (`core-mosquitto`). The payload determines how the sync is labeled in notifications, logs, and events: `arrival` is labeled "Arrival," anything else is labeled "Manual." Rather than publishing directly, call the `script.dashcam_trigger_sync` helper (see `ha_scripts_reference.yaml`) so the payload is always set correctly. The listener is automatically restarted if it dies.
 
 ---
 
@@ -68,4 +68,4 @@ Config backups are only written when the camera settings have actually changed. 
 
 ## Example Automations
 
-See `ha_automations_reference.yaml` in the [GitHub repository](https://github.com/trevnologies/viofo-sync-addon) for ready-to-import automation examples covering arrival sync, sync result notifications, and config change notifications.
+See `ha_automations_reference.yaml` and `ha_scripts_reference.yaml` in the [GitHub repository](https://github.com/trevnologies/viofo-sync-addon) for ready-to-import examples covering the shared trigger script, arrival sync, sync result notifications, and config change notifications.

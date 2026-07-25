@@ -136,9 +136,22 @@ delete_from_camera() {
     fi
 }
 
+# ─── Helper: human-readable trigger label ────────────────────────────────────
+trigger_label() {
+    case "$1" in
+        startup)   echo "Startup" ;;
+        arrival)   echo "Arrival" ;;
+        scheduled) echo "Scheduled" ;;
+        manual)    echo "Manual" ;;
+        *)         echo "$1" ;;
+    esac
+}
+
 # ─── Main sync function ──────────────────────────────────────────────────────
 run_sync() {
     local trigger_source="${1:-scheduled}"
+    local trigger_desc
+    trigger_desc=$(trigger_label "$trigger_source")
 
     if [ -f "$LOCK_FILE" ]; then
         log "Sync already in progress, skipping (triggered by: ${trigger_source})"
@@ -157,21 +170,24 @@ run_sync() {
     local deleted=0
     local skipped=0
     local errors=0
+    local total_found=0
 
     # ── Check camera reachability ──────────────────────────────────────────
     if ! curl -sf --max-time 5 "http://${CAM_IP}/" > /dev/null 2>&1; then
         log "Camera offline or unreachable at ${CAM_IP}"
         fire_ha_event "viofo_sync_complete" \
             "{\"status\": \"offline\", \"trigger\": \"${trigger_source}\", \"downloaded\": 0, \"deleted\": 0, \"skipped\": 0, \"errors\": 0}"
-        ha_notify "🚗 Dashcam Offline" \
-            "Could not reach camera at ${CAM_IP} during ${trigger_source} sync."
+        ha_notify "🚗 Dashcam Offline — ${trigger_desc}" \
+            "Could not reach camera at ${CAM_IP}."
         return 0
     fi
 
     log "Camera is online at ${CAM_IP}"
     backup_config
 
-    # ── Iterate channels ───────────────────────────────────────────────────
+    # ── Scan channels first, so we know the total before downloading ──────
+    declare -A channel_file_lists
+
     for channel in "${CHANNELS[@]}"; do
         log "Scanning channel: ${channel}"
 
@@ -185,6 +201,21 @@ run_sync() {
         # Build file list as plain variable to avoid subshell scope issues
         file_list=$(echo "$listing" | grep -oE 'href="/DCIM/Movie/RO/[^"?#]+\.MP4"' | \
             sed 's|href="/DCIM/Movie/RO/||; s|"||g' | sort || true)
+
+        channel_file_lists["$channel"]="$file_list"
+
+        channel_count=0
+        [ -n "$file_list" ] && channel_count=$(printf '%s\n' "$file_list" | grep -c .)
+        total_found=$((total_found + channel_count))
+        log "Found ${channel_count} file(s) in ${channel}"
+    done
+
+    log "Detected ${total_found} file(s) to sync"
+
+    # ── Download using each channel's already-fetched listing ─────────────
+    for channel in "${CHANNELS[@]}"; do
+        file_list="${channel_file_lists[$channel]:-}"
+        [ -z "$file_list" ] && continue
 
         while IFS= read -r filename; do
             [ -z "$filename" ] && continue
@@ -283,17 +314,17 @@ EOF
         local msg="Downloaded ${downloaded} protected clip(s) to NAS."
         [ "$deleted" -gt 0 ] && msg="${msg} Cleared ${deleted} from camera."
         [ "$CONFIG_BACKED_UP" = "true" ] && msg="${msg} Camera config backup saved."
-        ha_notify "✅ Dashcam Sync Complete" "$msg"
+        ha_notify "✅ Dashcam Sync Complete — ${trigger_desc}" "$msg"
     elif [ "$status" = "none" ] && [ "$CONFIG_BACKED_UP" = "true" ] && [ "$UI_NOTIFY_CONFIG_CHANGE" = "true" ]; then
-        ha_notify "📷 Dashcam Config Changed" \
+        ha_notify "📷 Dashcam Config Changed — ${trigger_desc}" \
             "No new clips found, but camera config backup was saved." \
             "viofo_config"
     elif [ "$status" = "partial" ]; then
         local msg="Downloaded ${downloaded} clip(s) but encountered ${errors} error(s). Check add-on logs."
         [ "$CONFIG_BACKED_UP" = "true" ] && msg="${msg} Camera config backup saved."
-        ha_notify "⚠️ Dashcam Sync Partial" "$msg" "viofo_sync_warning"
+        ha_notify "⚠️ Dashcam Sync Partial — ${trigger_desc}" "$msg" "viofo_sync_warning"
     elif [ "$status" = "error" ]; then
-        ha_notify "❌ Dashcam Sync Failed" \
+        ha_notify "❌ Dashcam Sync Failed — ${trigger_desc}" \
             "Sync encountered ${errors} error(s) with no successful downloads. Check add-on logs." \
             "viofo_sync_error"
     fi
@@ -308,8 +339,8 @@ start_mqtt_listener() {
             -t "viofo/sync/trigger" \
             ${MQTT_USER:+-u "$MQTT_USER"} \
             ${MQTT_PASS:+-P "$MQTT_PASS"} | \
-        while IFS= read -r _; do
-            touch "$MQTT_TRIGGER_FILE"
+        while IFS= read -r payload; do
+            printf '%s' "$payload" > "$MQTT_TRIGGER_FILE"
         done
     ) &
     MQTT_PID=$!
@@ -337,9 +368,15 @@ while true; do
 
     # Check for MQTT trigger
     if [ -f "$MQTT_TRIGGER_FILE" ]; then
+        mqtt_payload=$(cat "$MQTT_TRIGGER_FILE" 2>/dev/null || echo "")
         rm -f "$MQTT_TRIGGER_FILE"
-        log "MQTT trigger received"
-        run_sync "manual"
+        if [ "$mqtt_payload" = "arrival" ]; then
+            log "MQTT trigger received (payload: arrival)"
+            run_sync "arrival"
+        else
+            log "MQTT trigger received (payload: ${mqtt_payload:-<none>})"
+            run_sync "manual"
+        fi
         last_run=$(date +%s)
 
     # Scheduled interval (if enabled)

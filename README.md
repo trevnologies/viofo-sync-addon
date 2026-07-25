@@ -63,7 +63,7 @@ Start the add-on with `dry_run: true`. Check the **Log** tab to confirm it finds
 
 ## Home Assistant Automations
 
-Import-ready automation examples are in [`ha_automations_reference.yaml`](ha_automations_reference.yaml). Replace the placeholder entity names and notification service with your own before importing.
+Import-ready automation examples are in [`ha_automations_reference.yaml`](ha_automations_reference.yaml). The arrival automation depends on the shared trigger script in [`ha_scripts_reference.yaml`](ha_scripts_reference.yaml) — create that first. Replace the placeholder entity names and notification service with your own before importing.
 
 ### Sync on arrival
 
@@ -87,10 +87,9 @@ action:
     continue_on_timeout: false
   - delay:
       minutes: 5
-  - action: mqtt.publish
+  - action: script.dashcam_trigger_sync
     data:
-      topic: viofo/sync/trigger
-      payload: run
+      source: arrival
 mode: restart
 ```
 
@@ -110,7 +109,8 @@ NAS — Backups/Dashcam/
         └── config/viofo_config_YYYY-MM-DD_HHMMSS.ini
 
 HA Automation (leave home → enter dashcam zone + 5 min delay)
-        │  mqtt.publish → viofo/sync/trigger
+        │  script.dashcam_trigger_sync (source: arrival)
+        │  └─ mqtt.publish → viofo/sync/trigger
         ▼
 Add-on MQTT listener
         │  fires run_sync
@@ -141,15 +141,11 @@ HA Automation → mobile notification
 |--------|-----|
 | Startup | Automatic on add-on start if `sync_on_startup` is enabled |
 | Scheduled | Set `schedule_interval_minutes` > `0` |
-| Arrival | HA automation publishes to `viofo/sync/trigger` after leaving home and entering dashcam zone |
-| Manual | Publish any message to `viofo/sync/trigger` |
+| Arrival | HA automation calls `script.dashcam_trigger_sync` with `source: arrival` after leaving home and entering the dashcam zone — labeled "Arrival" in notifications and logs |
+| Manual | Call `script.dashcam_trigger_sync` (source defaults to `manual`), or publish anything other than `arrival` directly to `viofo/sync/trigger` — labeled "Manual" |
 
 ---
 
 ## Changelog
 
-### 1.8.7
-- Added `sync_on_startup` config option (default: `true`) — disable to skip the automatic sync on add-on start
-- Added `ui_notifications` config option (default: `true`) — controls whether sync results appear in the HA UI notification center
-- Added `ui_notify_config_change` config option (default: `true`) — independently controls the camera config backup notification in the HA UI
-- Push notifications via HA automations are unaffected by any of the above settings
+See [`CHANGELOG.md`](CHANGELOG.md) for the version history.
