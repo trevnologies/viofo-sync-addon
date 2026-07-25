@@ -1,0 +1,37 @@
+# ============================================================
+# VIOFO Sync — Home Assistant Scripts Reference
+#
+# Shared helper used by both the arrival automation (see
+# ha_automations_reference.yaml) and any manual trigger button
+# or voice command — so there's exactly one place that knows how
+# to publish a sync trigger, instead of every caller duplicating
+# the MQTT publish call and having to get the payload right.
+#
+# To create this via Settings → Automations & Scenes → Scripts →
+# Add Script → Edit in YAML, paste everything BELOW this line,
+# starting at "alias:" (the UI assigns the entity_id itself —
+# rename it to dashcam_trigger_sync via the three-dot menu →
+# "Rename entity ID" if you want it to match the examples here).
+# ============================================================
+
+alias: "Dashcam: Trigger Sync"
+description: "Publishes a sync trigger to the VIOFO Sync add-on, tagged with what caused it"
+fields:
+  source:
+    name: Source
+    description: >-
+      'arrival' when triggered by coming home, 'manual' for
+      anything else (dashboard button, voice command, etc.)
+    required: true
+    default: manual
+    selector:
+      select:
+        options:
+          - manual
+          - arrival
+sequence:
+  - action: mqtt.publish
+    data:
+      topic: viofo/sync/trigger
+      payload: "{{ source }}"
+mode: single
