@@ -1,7 +1,12 @@
 # Changelog
 
 ### 1.8.9
-- Removed `,complain` from the AppArmor profile — now enforcing rather than just logging 
+
+- Removed `,complain` from the AppArmor profile — now enforcing rather than just logging
+- Added a "Detected N file(s) to sync" log line before downloads start, so it can be compared directly against the downloaded/skipped/errors counts in the final "Sync complete" line
+- Sync notifications now show what triggered them — Startup, Arrival, Manual, or Scheduled — in the title
+- Added `script.dashcam_trigger_sync` (see `ha_scripts_reference.yaml`) as the single place that publishes sync triggers, so arrival and manual triggers can't be mislabeled by a caller getting the MQTT payload wrong
+- Arrival automation and docs updated to call the shared script instead of publishing MQTT directly
 
 ### 1.8.8
 - Migrated `map` config to the current `type`/`read_only` format — replaces the legacy `share:rw` shorthand with `type: share` / `read_only: false`
