@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.8.9
+- Removed `,complain` from the AppArmor profile — now enforcing rather than just logging
+
 ### 1.8.8
 - Migrated `map` config to the current `type`/`read_only` format — replaces the legacy `share:rw` shorthand with `type: share` / `read_only: false`
 - Removed unused `auth_api` and `hassio_api`/`hassio_role: manager` grants — the add-on only ever calls the Home Assistant Core API proxy (fire events, `persistent_notification.create`), so these were unnecessary privilege

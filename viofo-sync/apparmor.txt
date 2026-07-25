@@ -1,11 +1,12 @@
 #include <tunables/global>
 
-# Start this in complain mode first (as below), watch the audit log, then
-# remove ",complain" once a normal run (startup sync + MQTT trigger + a
-# config-change backup) produces no more ALLOWED entries:
-#   journalctl _TRANSPORT="audit" -g 'apparmor="ALLOWED"'
+# Enforcing mode (no ",complain" flag) — this profile actively blocks
+# anything not explicitly granted below, not just logs it. If the app
+# starts throwing unexpected errors after an update, check the add-on's
+# own Log tab first; add ",complain" back temporarily only if you need
+# to diagnose via journalctl _TRANSPORT="audit" -g 'apparmor="ALLOWED"'.
 
-profile viofo_sync flags=(attach_disconnected,mediate_deleted,complain) {
+profile viofo_sync flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
 
   file,
