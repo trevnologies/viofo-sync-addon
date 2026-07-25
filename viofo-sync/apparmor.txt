@@ -1,0 +1,59 @@
+#include <tunables/global>
+
+# Start this in complain mode first (as below), watch the audit log, then
+# remove ",complain" once a normal run (startup sync + MQTT trigger + a
+# config-change backup) produces no more ALLOWED entries:
+#   journalctl _TRANSPORT="audit" -g 'apparmor="ALLOWED"'
+
+profile viofo_sync flags=(attach_disconnected,mediate_deleted,complain) {
+  #include <abstractions/base>
+
+  file,
+  signal (send) set=(kill,term,int,hup,cont),
+  signal (receive) set=(term,int,hup,cont),
+  network inet stream,
+  network inet6 stream,
+
+  # --- Base image / S6 init plumbing (leave as-is, don't remove) ---
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /run/{,**} rwk,
+  /dev/tty rw,
+
+  # --- Bashio helpers shipped in the HA base image ---
+  /usr/lib/bashio/** ix,
+
+  # --- The add-on script itself ---
+  /run.sh r,
+
+  # --- Working/state files run.sh actually creates ---
+  # /tmp/viofo_sync.lock, viofo_sync_status.json, viofo_mqtt_trigger,
+  # viofo_config_latest.ini
+  /tmp/** rwk,
+
+  # --- /data/options.json (read) + /data/viofo_config_last.ini (r/w) ---
+  /data/** rw,
+
+  # --- Supervisor token, read via fallback path in run.sh ---
+  /run/s6/container_environment/SUPERVISOR_TOKEN r,
+
+  # --- NAS share: clip downloads + timestamped config backups ---
+  /share/** rw,
+
+  # --- Needed by curl/jq/mosquitto_clients for DNS + TLS ---
+  /etc/resolv.conf r,
+  /etc/hosts r,
+  /etc/ssl/certs/** r,
+  /usr/share/ca-certificates/** r,
+
+  # --- Explicit denies ---
+  deny /proc/** w,
+  deny /sys/** w,
+}

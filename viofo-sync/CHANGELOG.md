@@ -1,5 +1,12 @@
 # Changelog
 
+### 1.8.8
+- Migrated `map` config to the current `type`/`read_only` format — replaces the legacy `share:rw` shorthand with `type: share` / `read_only: false`
+- Removed unused `auth_api` and `hassio_api`/`hassio_role: manager` grants — the add-on only ever calls the Home Assistant Core API proxy (fire events, `persistent_notification.create`), so these were unnecessary privilege
+- Re-enabled AppArmor (`apparmor: true`), reversing a previous `apparmor: false` override
+- Added a custom `apparmor.txt` profile scoped to the add-on's actual file and network access
+- Add-on security rating raised from 4 to 6
+
 ## 1.8.7
 - Added `sync_on_startup` config option (default: true) to control
   whether a sync runs automatically when the add-on starts. Disable
