@@ -86,9 +86,9 @@ jobs:
         run: |
           VERSION="${{ steps.changelog.outputs.version }}"
           {
-            echo "[![GitHub All Releases](https://img.shields.io/github/downloads/trevnologies/viofo-sync-addon/${VERSION}/total.svg)](https://github.com/trevnologies/viofo-sync-addon/releases/tag/${VERSION})"
-            echo ""
             cat release_notes.md
+            echo ""
+            echo "[![GitHub All Releases](https://img.shields.io/github/downloads/trevnologies/viofo-sync-addon/${VERSION}/total.svg)](https://github.com/trevnologies/viofo-sync-addon/releases/tag/${VERSION})"
           } > full_release_body.md
 
       # Creates the tag only if it doesn't already exist on the remote,
