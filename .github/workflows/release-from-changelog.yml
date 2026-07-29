@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'CHANGELOG.md'
+      - 'viofo-sync/CHANGELOG.md'
   workflow_dispatch:
     inputs:
       version:
@@ -15,6 +15,10 @@ on:
 
 permissions:
   contents: write
+
+env:
+  # Adjust this if CHANGELOG.md actually lives somewhere else in the repo.
+  CHANGELOG_PATH: viofo-sync/CHANGELOG.md
 
 jobs:
   release:
@@ -35,12 +39,17 @@ jobs:
       - name: Extract version and release notes
         id: changelog
         run: |
+          if [ ! -f "$CHANGELOG_PATH" ]; then
+            echo "No file at $CHANGELOG_PATH — update the CHANGELOG_PATH env var at the top of this workflow" >&2
+            exit 1
+          fi
+
           INPUT_VERSION="${{ inputs.version }}"
 
           if [ -n "$INPUT_VERSION" ]; then
             VERSION="$INPUT_VERSION"
           else
-            VERSION=$(grep -m 1 -oP '^(##|###)\s+\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md)
+            VERSION=$(grep -m 1 -oP '^(##|###)\s+\K[0-9]+\.[0-9]+\.[0-9]+' "$CHANGELOG_PATH")
           fi
 
           if [ -z "$VERSION" ]; then
@@ -64,10 +73,10 @@ jobs:
             $0 ~ start { grabbing = 1; next }
             grabbing && /^(##|###)[[:space:]]+[0-9]+\.[0-9]+\.[0-9A-Za-z]+/ { exit }
             grabbing { print }
-          ' CHANGELOG.md > release_notes.md
+          ' "$CHANGELOG_PATH" > release_notes.md
 
           if [ ! -s release_notes.md ]; then
-            echo "No section found in CHANGELOG.md matching version $VERSION" >&2
+            echo "No section found in $CHANGELOG_PATH matching version $VERSION" >&2
             exit 1
           fi
 
