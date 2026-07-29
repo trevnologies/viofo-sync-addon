@@ -7,6 +7,11 @@ on:
     paths:
       - 'CHANGELOG.md'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.8.6). Leave blank to use the top entry in CHANGELOG.md.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -30,20 +35,41 @@ jobs:
       - name: Extract version and release notes
         id: changelog
         run: |
-          VERSION=$(grep -m 1 -oP '^#{2,3}\s+\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md)
+          INPUT_VERSION="${{ inputs.version }}"
+
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION=$(grep -m 1 -oP '^(##|###)\s+\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md)
+          fi
+
           if [ -z "$VERSION" ]; then
-            echo "Could not find a version heading (## or ### x.y.z) at the top of CHANGELOG.md" >&2
+            echo "Could not determine a version to release" >&2
             exit 1
           fi
+          echo "Releasing version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          # Grab everything under that top heading, stopping at the next
-          # version heading (## or ###) — but NOT at "### Fixed"-style
-          # subsection headings, since those don't start with a digit.
-          awk '
-            /^#{2,3}[[:space:]]+[0-9]+\.[0-9]+\.[0-9A-Za-z]+/ { n++; if (n==2) exit; next }
-            n==1 { print }
+          # Pull that version's section out of CHANGELOG.md, wherever it
+          # appears in the file — stops at the next real version heading,
+          # ignoring nested "### Fixed"/"### Added"/"### Changed" subheadings.
+          # Uses (##|###) instead of #{2,3}: Ubuntu's default awk is mawk,
+          # which doesn't support {n,m} interval regex — that was the cause
+          # of the "exit code 2" failure.
+          awk -v ver="$VERSION" '
+            BEGIN {
+              gsub(/\./, "\\.", ver)
+              start = "^(##|###)[[:space:]]+" ver "([[:space:]]|$)"
+            }
+            $0 ~ start { grabbing = 1; next }
+            grabbing && /^(##|###)[[:space:]]+[0-9]+\.[0-9]+\.[0-9A-Za-z]+/ { exit }
+            grabbing { print }
           ' CHANGELOG.md > release_notes.md
+
+          if [ ! -s release_notes.md ]; then
+            echo "No section found in CHANGELOG.md matching version $VERSION" >&2
+            exit 1
+          fi
 
       # Builds the badge with the tag baked in, so it always matches
       # whatever version this specific release actually is.
