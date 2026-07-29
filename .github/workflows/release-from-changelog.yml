@@ -1,0 +1,83 @@
+name: Release from Changelog
+
+# Fires whenever CHANGELOG.md changes on main, or you trigger it by hand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Pulls the newest version heading out of CHANGELOG.md.
+      # Handles this repo's actual format: no brackets around the version,
+      # and heading level isn't consistent (### 1.8.9 / ### 1.8.8 up top,
+      # ## 1.8.7 and older below). A version heading is identified as any
+      # ## or ### line whose first token is a version number — that's
+      # what tells it apart from nested "### Fixed" / "### Added" /
+      # "### Changed" subsection headings inside the older entries.
+      - name: Extract version and release notes
+        id: changelog
+        run: |
+          VERSION=$(grep -m 1 -oP '^#{2,3}\s+\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md)
+          if [ -z "$VERSION" ]; then
+            echo "Could not find a version heading (## or ### x.y.z) at the top of CHANGELOG.md" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # Grab everything under that top heading, stopping at the next
+          # version heading (## or ###) — but NOT at "### Fixed"-style
+          # subsection headings, since those don't start with a digit.
+          awk '
+            /^#{2,3}[[:space:]]+[0-9]+\.[0-9]+\.[0-9A-Za-z]+/ { n++; if (n==2) exit; next }
+            n==1 { print }
+          ' CHANGELOG.md > release_notes.md
+
+      # Builds the badge with the tag baked in, so it always matches
+      # whatever version this specific release actually is.
+      - name: Assemble release body
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          {
+            echo "[![GitHub All Releases](https://img.shields.io/github/downloads/trevnologies/viofo-sync-addon/${VERSION}/total.svg)](https://github.com/trevnologies/viofo-sync-addon/releases/tag/${VERSION})"
+            echo ""
+            cat release_notes.md
+          } > full_release_body.md
+
+      # Creates the tag only if it doesn't already exist on the remote,
+      # so re-running the workflow (or a workflow_dispatch) never moves
+      # a tag that's already shipped.
+      - name: Create tag if it doesn't exist
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION} already exists on origin, leaving it as-is"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "${VERSION}"
+            git push origin "${VERSION}"
+          fi
+
+      # Creates the release if the tag is new, or updates the existing
+      # release's notes/badge in place if it's already there.
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.changelog.outputs.version }}
+          name: ${{ steps.changelog.outputs.version }}
+          body_path: full_release_body.md
+          draft: false
+          prerelease: false
