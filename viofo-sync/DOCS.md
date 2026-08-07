@@ -14,6 +14,8 @@ Downloads protected (locked) clips from your VIOFO dashcam to your NAS over Wi-F
 | `delete_after_download` | Delete each file from the camera SD card after it is verified saved to the NAS. | `true` |
 | `dry_run` | Log what would happen without downloading or deleting anything. Use this to verify your setup before going live. | `false` |
 | `sync_on_startup` | Run a sync automatically each time the add-on starts. | `true` |
+| `skip_startup_sync_when_away` | Before a startup sync, check `presence_entity` in HA. If it isn't `home`, skip the startup sync instead of trying (and failing) to reach a camera that most likely left with you. If the state can't be read, the startup sync runs anyway. | `true` |
+| `presence_entity` | The `person.*` entity checked by `skip_startup_sync_when_away`. | `person.your_name` |
 | `ui_notifications` | Show sync results (success, partial, error, offline) as persistent notifications in the HA UI notification center. | `true` |
 | `ui_notify_config_change` | Show a notification in the HA UI when a camera config backup is saved and no new clips were found. | `true` |
 | `mqtt_user` | Mosquitto broker username. Leave blank for anonymous connections. | `` |
@@ -25,7 +27,7 @@ Downloads protected (locked) clips from your VIOFO dashcam to your NAS over Wi-F
 
 | Method | How |
 |--------|-----|
-| Startup | Automatic on add-on start if `sync_on_startup` is enabled |
+| Startup | Automatic on add-on start if `sync_on_startup` is enabled — skipped if `skip_startup_sync_when_away` is enabled and `presence_entity` isn't `home` |
 | Scheduled | Set `schedule_interval_minutes` > `0` |
 | Arrival | HA automation calls `script.dashcam_trigger_sync` with `source: arrival` after you leave home and enter your dashcam sync zone — labeled "Arrival" in notifications and logs |
 | Manual | Call `script.dashcam_trigger_sync` (source defaults to `manual`), or publish anything other than `arrival` directly to `viofo/sync/trigger` — labeled "Manual" |

@@ -1,6 +1,6 @@
 name: "VIOFO Sync"
 description: "Downloads protected (RO) videos from your VIOFO dashcam to your NAS, then deletes them from the camera."
-version: "1.8.9"
+version: "1.8.10"
 url: "https://github.com/trevnologies/viofo-sync-addon"
 slug: "viofo_sync"
 startup: application
@@ -21,6 +21,8 @@ options:
   delete_after_download: true
   dry_run: false
   sync_on_startup: true
+  skip_startup_sync_when_away: true
+  presence_entity: "person.your_name"
   ui_notifications: true
   ui_notify_config_change: true
   mqtt_user: ""
@@ -32,6 +34,8 @@ schema:
   delete_after_download: bool
   dry_run: bool
   sync_on_startup: bool
+  skip_startup_sync_when_away: bool
+  presence_entity: str
   ui_notifications: bool
   ui_notify_config_change: bool
   mqtt_user: str
