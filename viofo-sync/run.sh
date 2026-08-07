@@ -29,6 +29,8 @@ DRY_RUN=$(jq -r '.dry_run' "$OPTIONS_FILE")
 UI_NOTIFICATIONS=$(jq -r '.ui_notifications // true' "$OPTIONS_FILE")
 UI_NOTIFY_CONFIG_CHANGE=$(jq -r '.ui_notify_config_change // true' "$OPTIONS_FILE")
 SYNC_ON_STARTUP=$(jq -r '.sync_on_startup // true' "$OPTIONS_FILE")
+SKIP_STARTUP_WHEN_AWAY=$(jq -r '.skip_startup_sync_when_away // true' "$OPTIONS_FILE")
+PRESENCE_ENTITY=$(jq -r '.presence_entity // "person.trevor"' "$OPTIONS_FILE")
 MQTT_USER=$(jq -r '.mqtt_user // empty' "$OPTIONS_FILE")
 MQTT_PASS=$(jq -r '.mqtt_pass // empty' "$OPTIONS_FILE")
 
@@ -45,6 +47,7 @@ log "Dry run: ${DRY_RUN}"
 log "UI notifications: ${UI_NOTIFICATIONS}"
 log "UI notify config change: ${UI_NOTIFY_CONFIG_CHANGE}"
 log "Sync on startup: ${SYNC_ON_STARTUP}"
+log "Skip startup sync when away: ${SKIP_STARTUP_WHEN_AWAY} (presence entity: ${PRESENCE_ENTITY})"
 
 mkdir -p "$DEST_DIR"
 mkdir -p "$CONFIG_BACKUP_DIR"
@@ -87,6 +90,16 @@ ha_notify() {
         -H "Content-Type: application/json" \
         -d "{\"title\": \"${title}\", \"message\": \"${message}\", \"notification_id\": \"${notification_id}\"}" \
         "http://supervisor/core/api/services/persistent_notification/create" > /dev/null || true
+}
+
+# ─── Helper: query an HA entity's state (used for startup presence gate) ────
+ha_get_state() {
+    local entity_id="$1"
+    [ -z "$SUPERVISOR_TOKEN" ] && { echo ""; return 1; }
+    curl -sf --max-time 5 \
+        -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        -H "Content-Type: application/json" \
+        "http://supervisor/core/api/states/${entity_id}" 2>/dev/null | jq -r '.state // empty'
 }
 
 # ─── Config backup ───────────────────────────────────────────────────────────
@@ -352,7 +365,21 @@ INTERVAL_SECONDS=$((INTERVAL * 60))
 
 # Run once at startup (if enabled)
 if [ "$SYNC_ON_STARTUP" = "true" ]; then
-    run_sync "startup"
+    run_startup_sync=true
+
+    if [ "$SKIP_STARTUP_WHEN_AWAY" = "true" ]; then
+        presence_state=$(ha_get_state "$PRESENCE_ENTITY")
+        if [ -z "$presence_state" ]; then
+            log "Could not read ${PRESENCE_ENTITY} state — running startup sync anyway"
+        elif [ "$presence_state" != "home" ]; then
+            log "Skipping startup sync — ${PRESENCE_ENTITY} is '${presence_state}', camera is most likely away too"
+            run_startup_sync=false
+        else
+            log "${PRESENCE_ENTITY} is home — proceeding with startup sync"
+        fi
+    fi
+
+    [ "$run_startup_sync" = "true" ] && run_sync "startup"
 else
     log "Skipping startup sync (sync_on_startup is disabled)"
 fi
