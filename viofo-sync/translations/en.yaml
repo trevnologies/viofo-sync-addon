@@ -22,7 +22,7 @@ configuration:
     description: "Before running a startup sync, check whether presence_entity is home. If it isn't, skip the startup sync instead of timing out against a camera that's most likely away with you. Falls back to running the sync if the presence state can't be read."
   presence_entity:
     name: Presence Entity
-    description: "The person entity (e.g. person.trevor) checked by 'Skip Startup Sync When Away'."
+    description: "The person entity (e.g. person.your_name) checked by 'Skip Startup Sync When Away'."
   ui_notifications:
     name: UI Notifications
     description: "Show sync result notifications (success, partial, error, offline) in the Home Assistant UI notification center. Disable if you only want push notifications on your phone."

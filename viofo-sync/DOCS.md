@@ -15,7 +15,7 @@ Downloads protected (locked) clips from your VIOFO dashcam to your NAS over Wi-F
 | `dry_run` | Log what would happen without downloading or deleting anything. Use this to verify your setup before going live. | `false` |
 | `sync_on_startup` | Run a sync automatically each time the add-on starts. | `true` |
 | `skip_startup_sync_when_away` | Before a startup sync, check `presence_entity` in HA. If it isn't `home`, skip the startup sync instead of trying (and failing) to reach a camera that most likely left with you. If the state can't be read, the startup sync runs anyway. | `true` |
-| `presence_entity` | The `person.*` entity checked by `skip_startup_sync_when_away`. | `person.trevor` |
+| `presence_entity` | The `person.*` entity checked by `skip_startup_sync_when_away`. | `person.your_name` |
 | `ui_notifications` | Show sync results (success, partial, error, offline) as persistent notifications in the HA UI notification center. | `true` |
 | `ui_notify_config_change` | Show a notification in the HA UI when a camera config backup is saved and no new clips were found. | `true` |
 | `mqtt_user` | Mosquitto broker username. Leave blank for anonymous connections. | `` |

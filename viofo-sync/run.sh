@@ -30,7 +30,7 @@ UI_NOTIFICATIONS=$(jq -r '.ui_notifications // true' "$OPTIONS_FILE")
 UI_NOTIFY_CONFIG_CHANGE=$(jq -r '.ui_notify_config_change // true' "$OPTIONS_FILE")
 SYNC_ON_STARTUP=$(jq -r '.sync_on_startup // true' "$OPTIONS_FILE")
 SKIP_STARTUP_WHEN_AWAY=$(jq -r '.skip_startup_sync_when_away // true' "$OPTIONS_FILE")
-PRESENCE_ENTITY=$(jq -r '.presence_entity // "person.trevor"' "$OPTIONS_FILE")
+PRESENCE_ENTITY=$(jq -r '.presence_entity // "person.your_name"' "$OPTIONS_FILE")
 MQTT_USER=$(jq -r '.mqtt_user // empty' "$OPTIONS_FILE")
 MQTT_PASS=$(jq -r '.mqtt_pass // empty' "$OPTIONS_FILE")
 

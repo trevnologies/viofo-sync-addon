@@ -1,9 +1,13 @@
 # Changelog
 
+### 1.8.11
+
+- No functional changes. Replaced the maintainer-specific default entity ID in docs/config with a generic `person.your_name` placeholder
+
 ### 1.8.10
 
-- Added `skip_startup_sync_when_away` config option (default: `true`) — before a startup sync, the add-on now checks the `presence_entity` (default `person.trevor`) via the HA Core API. If it isn't `home`, the startup sync is skipped instead of timing out against a camera that most likely left home too, which was previously firing a spurious "Dashcam Offline — Startup" notification on every reboot while away
-- Added `presence_entity` config option (default: `person.trevor`) to control which entity is checked
+- Added `skip_startup_sync_when_away` config option (default: `true`) — before a startup sync, the add-on now checks the `presence_entity` (default `person.your_name`) via the HA Core API. If it isn't `home`, the startup sync is skipped instead of timing out against a camera that most likely left home too, which was previously firing a spurious "Dashcam Offline — Startup" notification on every reboot while away
+- Added `presence_entity` config option (default: `person.your_name`) to control which entity is checked
 - If the presence state can't be read (no Supervisor token, entity missing, API error), the add-on fails open and runs the startup sync as before — no new failure mode for setups that don't configure a presence entity
 
 ### 1.8.9
