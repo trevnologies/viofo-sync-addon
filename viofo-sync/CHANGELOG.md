@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.8.13
+
+- Dropped `armhf` and `armv7` from `arch` (config.yaml) and `build_from` (build.yaml). Home Assistant deprecated both as of 2025.12 (December 3, 2025) — this only affects which platforms get an image built going forward, nothing about how the add-on itself runs.
+- Removed `apparmor: true`, `boot: auto`, `gpio: false`, `host_network: false`, `startup: application`, `stdin: false`, `uart: false`, and `usb: false` from config.yaml — each was set to exactly its Supervisor schema default, so this changes nothing functionally, it just clears out redundant lines that a config linter flags as noise.
+
 ### 1.8.12
 
 - Fixed a bug where `ui_notifications`, `ui_notify_config_change`, `sync_on_startup`, and `skip_startup_sync_when_away` could never actually be set to `false`. Each was read with a `jq '.key // true'` fallback, but jq's `//` operator treats `false` the same as `null`/missing and substitutes the default — so a saved value of `false` silently evaluated to `true` at every startup regardless of what was configured in the UI. All four options are `required: true` in the schema (always present in `options.json`), so the fallback was unnecessary; removed it and read the values directly, matching how `dry_run` and `delete_after_download` were already handled correctly.
