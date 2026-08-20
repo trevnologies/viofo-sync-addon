@@ -1,0 +1,26 @@
+name: Validate
+
+# Runs on every push/PR, plus a daily schedule so a schema change
+# upstream gets caught even if nothing here changed.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  addon-lint:
+    name: Add-on config lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Run Home Assistant Add-on Lint
+        uses: frenck/action-addon-linter@b9cfd1bc62ba60d2c4fc96317b5f7ada5923f4a7 # v2, pinned 2026-08-20
+        with:
+          path: "./viofo-sync"
