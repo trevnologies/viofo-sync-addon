@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.8.12
+
+- Fixed a bug where `ui_notifications`, `ui_notify_config_change`, `sync_on_startup`, and `skip_startup_sync_when_away` could never actually be set to `false`. Each was read with a `jq '.key // true'` fallback, but jq's `//` operator treats `false` the same as `null`/missing and substitutes the default — so a saved value of `false` silently evaluated to `true` at every startup regardless of what was configured in the UI. All four options are `required: true` in the schema (always present in `options.json`), so the fallback was unnecessary; removed it and read the values directly, matching how `dry_run` and `delete_after_download` were already handled correctly.
+- If you had any of these four options set to off and it didn't seem to take effect, it's this bug — no add-on restart or reconfiguration needed beyond updating to this version.
+
 ### 1.8.11
 
 - No functional changes. Replaced the maintainer-specific default entity ID in docs/config with a generic `person.your_name` placeholder
