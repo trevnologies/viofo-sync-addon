@@ -1,16 +1,12 @@
 name: "VIOFO Sync"
 description: "Downloads protected (RO) videos from your VIOFO dashcam to your NAS, then deletes them from the camera."
-version: "1.8.12"
+version: "1.8.13"
 url: "https://github.com/trevnologies/viofo-sync-addon"
 slug: "viofo_sync"
-startup: application
-boot: auto
 init: false
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
 map:
   - type: share
     read_only: false
@@ -43,10 +39,4 @@ schema:
 # Only the Home Assistant Core API proxy is used (fire events, persistent_notification).
 # auth_api / hassio_api / hassio_role:manager were unused — removed for least privilege.
 homeassistant_api: true
-apparmor: true
 ports: {}
-host_network: false
-stdin: false
-uart: false
-usb: false
-gpio: false
