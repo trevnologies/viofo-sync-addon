@@ -1,9 +1,10 @@
 name: Validate
 
-# Runs on every push/PR, plus a daily schedule so a schema change
+# Runs on pushes to main and on every PR, plus a daily schedule so a schema change
 # upstream gets caught even if nothing here changed.
 on:
   push:
+    branches: ["main"]
   pull_request:
   schedule:
     - cron: "0 0 * * *"
